@@ -44,6 +44,7 @@ void CreatUser()
 	FILE *fp;
 	LOADSYSTEM user;
 	int i;
+	char tmp;
 	if ((fp = fopen(SAFEGUARD_PATH, "a+")) == NULL)
 	{
 		printf("File Open Failed!\n");
@@ -59,6 +60,7 @@ void CreatUser()
 	}*/
 	printf("Enter username and password:\n");
 	scanf("%s%s", user.username, user.userpassword);
+	while((tmp = getchar()!='\n') && tmp!=EOF);			//fflush
 	encrypt(user.userpassword);
 	fprintf(fp, "%s %s\n", user.username, user.userpassword);
 	if (fclose(fp))
@@ -177,11 +179,23 @@ int main()
 	char c_tmp, op, opt;
 	int s_pid = -1;
 	char ch_pid[20];
-	int status = 1;
+	int statusa = 1;
+	int statusb = 1;
+	int statusc = 1;
+	int statusd = 1;
+	int statuse = 1;
+	int statusf = 1;
+	int statusg = 1;
+	int statush = 1;
+	char path[100];
 	char filename[100];
 	char *find;
 	char full_filename[200];
+	char full_filename_new[200];
 	strcpy(full_filename,SAFEGUARD);
+	strcpy(full_filename_new,SAFEGUARD);
+	char mod[4];
+	char filename_new[100];
 
 	while (1){
 		printf("Sign In or Sign Up?\n");
@@ -205,6 +219,7 @@ int main()
 			else
 			{
 				printf("Sign In With Failure!\n");
+				while((c_tmp = getchar()!='\n') && c_tmp!=EOF);
 			}
 		}
 		else{
@@ -216,7 +231,7 @@ int main()
 	}
 	while((c_tmp = getchar()!='\n') && c_tmp!=EOF);
 	while (1){
-		printf("Plz enter 'l' to get file list, 'o' to open file, 'e' to quit:");
+		printf("Plz enter Operand ('h' to get help, 'e' to quit) :");
 		opt = getchar();
 		while((c_tmp = getchar()!='\n') && c_tmp!=EOF);
 		if (opt == 'e'){
@@ -225,13 +240,26 @@ int main()
 			printf("Status: Steel Safe Locked!\n");
 			break;
 		}
-		else if (opt == 'o'){
+		else if (opt == 'h'){
+			printf("Operand list:\n");
+			printf("1	tree\n");
+			printf("2	ls\n");
+			printf("3	open/edit/create\n");
+			printf("4	delete\n");
+			printf("5	mkdir\n");
+			printf("6	rmdir\n");
+			//printf("7	chmod\n");
+			printf("7	copy\n");
+			printf("8	rename/move\n");
+			printf("9	chdir\n");
+		}
+		else if (opt == '3'){
 			if(s_pid = fork()){
 				//wait(&status);
 				sprintf(ch_pid,"%d",s_pid);
 				netlink_user(ch_pid);
 				printf("S_pid sent.\n");
-				wait(&status);
+				wait(&statusa);
 				printf("P_process finished.\n");
 			}
 			else{
@@ -246,17 +274,17 @@ int main()
 				exit(2);
 			}
 		}
-		else if (opt == 'l'){
+		else if (opt == '2'){
 			if(s_pid = fork()){
 				//wait(&status);
 				sprintf(ch_pid,"%d",s_pid);
 				netlink_user(ch_pid);
 				printf("S_pid sent.\n");
-				wait(&status);
+				wait(&statusb);
 				printf("P_process finished.\n");
 			}
 			else{
-				printf("Plz enter the filename(relative path):\n");
+				printf("Plz enter the pathname(relative path):\n");
 				fgets(filename,100,stdin);
 				find = strchr(filename, '\n');          
 				if(find)                           
@@ -266,6 +294,184 @@ int main()
 				printf("execl failed.\n");
 				exit(2);
 			}
+		}
+		else if (opt == '4'){
+			if(s_pid = fork()){
+				//wait(&status);
+				sprintf(ch_pid,"%d",s_pid);
+				netlink_user(ch_pid);
+				printf("S_pid sent.\n");
+				wait(&statusc);
+				printf("P_process finished.\n");
+			}
+			else{
+				printf("Plz enter the filename(relative path):\n");
+				fgets(filename,100,stdin);
+				find = strchr(filename, '\n');          
+				if(find)                           
+    					*find = '\0';
+				strcat(full_filename,filename);
+				execl("/usr/bin/unlink","unlink",full_filename,(char *)0);
+				printf("execl failed.\n");
+				exit(2);
+			}
+		}
+		else if (opt == '5'){
+			if(s_pid = fork()){
+				//wait(&status);
+				sprintf(ch_pid,"%d",s_pid);
+				netlink_user(ch_pid);
+				printf("S_pid sent.\n");
+				wait(&statusd);
+				printf("P_process finished.\n");
+			}
+			else{
+				printf("Plz enter the pathname(relative path):\n");
+				fgets(filename,100,stdin);
+				find = strchr(filename, '\n');          
+				if(find)                           
+    					*find = '\0';
+				strcat(full_filename,filename);
+				execl("/bin/mkdir","mkdir",full_filename,(char *)0);
+				printf("execl failed.\n");
+				exit(2);
+			}
+		}
+		else if (opt == '6'){
+			if(s_pid = fork()){
+				//wait(&status);
+				sprintf(ch_pid,"%d",s_pid);
+				netlink_user(ch_pid);
+				printf("S_pid sent.\n");
+				wait(&statuse);
+				printf("P_process finished.\n");
+			}
+			else{
+				printf("Plz enter the pathname(relative path):\n");
+				fgets(filename,100,stdin);
+				find = strchr(filename, '\n');          
+				if(find)                           
+    					*find = '\0';
+				strcat(full_filename,filename);
+				execl("/bin/rmdir","rmdir",full_filename,(char *)0);
+				printf("execl failed.\n");
+				exit(2);
+			}
+		}
+		/*
+		else if (opt == '7'){
+			if(s_pid = fork()){
+				//wait(&status);
+				sprintf(ch_pid,"%d",s_pid);
+				netlink_user(ch_pid);
+				printf("S_pid sent.\n");
+				wait(&statusf);
+				printf("P_process finished.\n");
+			}
+			else{
+				printf("Plz enter the filename(relative path):\n");
+				fgets(filename,100,stdin);
+				find = strchr(filename, '\n');          
+				if(find)                           
+    					*find = '\0';
+				strcat(full_filename,filename);
+				printf("Plz enter the new mod:");
+				fgets(mod,4,stdin);
+				mod[3] = '\0';
+				execl("/bin/chmod","chmod",mod,full_filename,(char *)0);
+				printf("execl failed.\n");
+				exit(2);
+			}
+		}
+		*/
+		else if (opt == '7'){
+			if(s_pid = fork()){
+				//wait(&status);
+				sprintf(ch_pid,"%d",s_pid);
+				netlink_user(ch_pid);
+				printf("S_pid sent.\n");
+				wait(&statusf);
+				printf("P_process finished.\n");
+			}
+			else{
+				printf("Plz enter the filename(relative path):\n");
+				fgets(filename,100,stdin);
+				find = strchr(filename, '\n');          
+				if(find)                           
+    					*find = '\0';
+				strcat(full_filename,filename);
+				printf("Plz enter the new filename or pathname(relative path):\n");
+				fgets(filename_new,100,stdin);
+				find = strchr(filename_new, '\n');          
+				if(find)                           
+    					*find = '\0';
+				strcat(full_filename_new,filename_new);
+				execl("/bin/cp","cp",full_filename,full_filename_new,(char *)0);
+				printf("execl failed.\n");
+				exit(2);
+			}
+		}
+		else if (opt == '1'){
+			if(s_pid = fork()){
+				//wait(&status);
+				sprintf(ch_pid,"%d",s_pid);
+				netlink_user(ch_pid);
+				printf("S_pid sent.\n");
+				wait(&statusg);
+				printf("P_process finished.\n");
+			}
+			else{
+				printf("Plz enter the pathname(relative path):\n");
+				fgets(filename,100,stdin);
+				find = strchr(filename, '\n');          
+				if(find)                           
+    					*find = '\0';
+				strcat(full_filename,filename);
+				execl("/usr/bin/tree","tree",full_filename,(char *)0);
+				printf("execl failed.\n");
+				exit(2);
+			}
+		}
+		else if (opt == '8'){
+			if(s_pid = fork()){
+				//wait(&status);
+				sprintf(ch_pid,"%d",s_pid);
+				netlink_user(ch_pid);
+				printf("S_pid sent.\n");
+				wait(&statush);
+				printf("P_process finished.\n");
+			}
+			else{
+				printf("Plz enter the filename(relative path):\n");
+				fgets(filename,100,stdin);
+				find = strchr(filename, '\n');          
+				if(find)                           
+    					*find = '\0';
+				strcat(full_filename,filename);
+				printf("Plz enter the new filename or pathname(relative path):\n");
+				fgets(filename_new,100,stdin);
+				find = strchr(filename_new, '\n');          
+				if(find)                           
+    					*find = '\0';
+				strcat(full_filename_new,filename_new);
+				execl("/bin/mv","mv",full_filename,full_filename_new,(char *)0);
+				printf("execl failed.\n");
+				exit(2);
+			}
+		}
+		else if (opt == '9'){
+			printf("Plz enter the new directory(relative path):\n");
+			fgets(path,100,stdin);
+			find = strchr(path, '\n');          
+			if(find) {                          
+    				*find = '/';
+				*(find+1) = '\0';
+			}
+			strcpy(full_filename,SAFEGUARD);
+			strcat(full_filename,path);
+			strcpy(full_filename_new,SAFEGUARD);
+			strcat(full_filename_new,path);
+			printf("Current working directory has changed to: %s\n", full_filename);
 		}
 		else
 			printf("Invalid option!\n");

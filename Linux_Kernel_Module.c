@@ -12,6 +12,7 @@
 #include <net/netlink.h>
 
 #include <linux/types.h>
+#include <linux/stat.h>
 #include <linux/netlink.h>
 
 #define NETLINK_TEST     30
@@ -27,6 +28,12 @@
 
 void ** sys_call_table;
 asmlinkage long(* orig_open)(const char * pathname, int flags, mode_t mode);
+asmlinkage long(* orig_unlink)(const char *pathname);
+asmlinkage long(* orig_mkdir)(const char *pathname, mode_t mode);
+asmlinkage long(* orig_rmdir)(const char *pathname);
+asmlinkage long(* orig_chmod)(const char *pathname, mode_t mode);
+asmlinkage long(* orig_rename)(const char *oldpath, const char *newpath);
+asmlinkage long(* orig_chdir)(const char *path);
 //static u32 pid = 0;
 //static struct sock *nl_sk = NULL;
 unsigned int clear_and_return_cr0(void);
@@ -43,20 +50,26 @@ static void netlink_rcv_msg(struct sk_buff *skb);
 int test_netlink_init(void);
 void test_netlink_exit(void);
 asmlinkage long hacked_open(const char * pathname, int flags, mode_t mode);
+asmlinkage long hacked_unlink(const char *pathname);
+asmlinkage long hacked_mkdir(const char *pathname, mode_t mode);
+asmlinkage long hacked_rmdir(const char *pathname);
+asmlinkage long hacked_chmod(const char *pathname, mode_t mode);
+asmlinkage long hacked_rename(const char *oldpath, const char *newpath);
+asmlinkage long hacked_chdir(const char *path);
 unsigned long **get_sys_call_table(void);
 
 int state = 0;
 char pid[5];
 
 MODULE_LICENSE("GPL");
-
+/*
 struct idt_descriptor{
     unsigned short off_low;
     unsigned short sel;
     unsigned char none,flags;
     unsigned short off_high;
 };
-
+*/
 static int __init audit_init(void){
 
      
@@ -69,9 +82,21 @@ static int __init audit_init(void){
     orig_open = sys_call_table[__NR_open]; /*保存open系统调用的原始处理函数人口地址,
                                             NR_open为 open的系统调用号,该号对应 open 系统调用处理函数
                                             在系统调用人口地址表的位置*/
-    printk("+ GARNER ORIGINAL SYS_OPEN\n");
+    orig_unlink = sys_call_table[__NR_unlink];
+    orig_mkdir = sys_call_table[__NR_mkdir];
+    orig_rmdir = sys_call_table[__NR_rmdir];
+    orig_chmod = sys_call_table[__NR_chmod];
+    orig_rename = sys_call_table[__NR_rename];
+    orig_chdir = sys_call_table[__NR_chdir];
+    printk("+ GARNER ORIGINAL SYS_CALL\n");
     sys_call_table[__NR_open] = hacked_open; //重载open 系统调用的处理函数人口地址
-    printk("+ HACKING SYS_OPEN\n");
+    sys_call_table[__NR_unlink] = hacked_unlink;
+    sys_call_table[__NR_mkdir] = hacked_mkdir;
+    sys_call_table[__NR_rmdir] = hacked_rmdir;
+    sys_call_table[__NR_chmod] = hacked_chmod;
+    sys_call_table[__NR_rename] = hacked_rename;
+    sys_call_table[__NR_chdir] = hacked_chdir;
+    printk("+ HACKING SYS_CALL\n");
     asm volatile ("movl %%eax, %%cr0"::"a"(orig_cr0)); //恢复控制寄存器CR0的值,即恢复其写保护检查控制位
     printk("+ RECOVER CR0\n");
     test_netlink_init();//进行Netlink相关的初始化
@@ -325,6 +350,195 @@ asmlinkage long hacked_open(const char * pathname, int flags, mode_t mode){
     }
 }
 
+asmlinkage long hacked_unlink(const char *pathname){
+    long ret;
+    char c_pid[5];
+    int tmp_int, count = 4;
+    int tmp_curr_pid = current->pid;	
+
+    while(count > 0){
+    	tmp_int = tmp_curr_pid % 10;
+	    c_pid[count-1] = tmp_int + '0';
+	    tmp_curr_pid /= 10;
+	    count--;
+    }
+    c_pid[4] = '\0';
+
+    if(pathname == NULL){
+        return -1;
+    }
+    
+    if ((state == 1 && strncmp(pid,c_pid,4)==0) || (strncmp(pathname,AUDITPATH,33)!=0)){
+        if (strstr(pathname,"SafeGuard")!=NULL){printk("DELETE FILE: %s\n",pathname);}
+	//printk("11111111111111111111\n");
+        ret = orig_unlink(pathname);
+        return ret;
+    }
+    else{
+	    printk("CURRENT PID: %s\n",c_pid);
+	    printk("VALID PID:   %s\n",pid);
+        printk("- DELETE FAILED : PERMISSION DENIED\n");
+        return -1;
+    }
+}
+
+asmlinkage long hacked_mkdir(const char *pathname, mode_t mode){
+    long ret;
+    char c_pid[5];
+    int tmp_int, count = 4;
+    int tmp_curr_pid = current->pid;	
+
+    while(count > 0){
+    	tmp_int = tmp_curr_pid % 10;
+	    c_pid[count-1] = tmp_int + '0';
+	    tmp_curr_pid /= 10;
+	    count--;
+    }
+    c_pid[4] = '\0';
+
+    if(pathname == NULL){
+        return -1;
+    }
+    
+    if ((state == 1 && strncmp(pid,c_pid,4)==0) || (strncmp(pathname,AUDITPATH,33)!=0)){
+        if (strstr(pathname,"SafeGuard")!=NULL){printk("CREATE PATH: %s\n",pathname);}
+        ret = orig_mkdir(pathname,mode);
+        return ret;
+    }
+    else{
+	    printk("CURRENT PID: %s\n",c_pid);
+	    printk("VALID PID:   %s\n",pid);
+        printk("- MKDIR FAILED : PERMISSION DENIED\n");
+        return -1;
+    }
+}
+
+asmlinkage long hacked_rmdir(const char *pathname){
+    long ret;
+    char c_pid[5];
+    int tmp_int, count = 4;
+    int tmp_curr_pid = current->pid;	
+
+    while(count > 0){
+    	tmp_int = tmp_curr_pid % 10;
+	    c_pid[count-1] = tmp_int + '0';
+	    tmp_curr_pid /= 10;
+	    count--;
+    }
+    c_pid[4] = '\0';
+
+    if(pathname == NULL){
+        return -1;
+    }
+    
+    if ((state == 1 && strncmp(pid,c_pid,4)==0) || (strncmp(pathname,AUDITPATH,33)!=0)){
+        if (strstr(pathname,"SafeGuard")!=NULL){printk("DELETE PATH: %s\n",pathname);}
+        ret = orig_rmdir(pathname);
+        return ret;
+    }
+    else{
+	    printk("CURRENT PID: %s\n",c_pid);
+	    printk("VALID PID:   %s\n",pid);
+        printk("- RMDIR FAILED : PERMISSION DENIED\n");
+        return -1;
+    }
+}
+
+asmlinkage long hacked_chmod(const char *pathname, mode_t mode){
+    long ret;
+    char c_pid[5];
+    int tmp_int, count = 4;
+    int tmp_curr_pid = current->pid;	
+
+    while(count > 0){
+    	tmp_int = tmp_curr_pid % 10;
+	    c_pid[count-1] = tmp_int + '0';
+	    tmp_curr_pid /= 10;
+	    count--;
+    }
+    c_pid[4] = '\0';
+
+    if(pathname == NULL){
+        return -1;
+    }
+    
+    if ((state == 1 && strncmp(pid,c_pid,4)==0) || (strncmp(pathname,AUDITPATH,33)!=0)){
+        if (strstr(pathname,"SafeGuard")!=NULL){printk("CHMOD FILE: %s\n",pathname);}
+	//printk("11111111111111111111\n");
+        ret = orig_chmod(pathname,mode);
+        return ret;
+    }
+    else{
+	    printk("CURRENT PID: %s\n",c_pid);
+	    printk("VALID PID:   %s\n",pid);
+        printk("- CHMOD FAILED : PERMISSION DENIED\n");
+        return -1;
+    }
+}
+
+asmlinkage long hacked_rename(const char *oldpath, const char *newpath){
+    long ret;
+    char c_pid[5];
+    int tmp_int, count = 4;
+    int tmp_curr_pid = current->pid;	
+
+    while(count > 0){
+    	tmp_int = tmp_curr_pid % 10;
+	    c_pid[count-1] = tmp_int + '0';
+	    tmp_curr_pid /= 10;
+	    count--;
+    }
+    c_pid[4] = '\0';
+
+    if(oldpath == NULL || newpath == NULL){
+        return -1;
+    }
+    
+    if ((state == 1 && strncmp(pid,c_pid,4)==0) || (strncmp(oldpath,AUDITPATH,33)!=0 && strncmp(newpath,AUDITPATH,33)!=0)){
+        if (strstr(oldpath,"SafeGuard")!=NULL && strstr(newpath,"SafeGuard")!=NULL){printk("RENAME/REMOVE FILE: FROM %s TO %s\n",oldpath,newpath);}
+        ret = orig_rename(oldpath,newpath);
+        return ret;
+    }
+    else{
+	    printk("CURRENT PID: %s\n",c_pid);
+	    printk("VALID PID:   %s\n",pid);
+        printk("- RENAME/REMOVE FAILED : PERMISSION DENIED\n");
+        return -1;
+    }
+}
+
+asmlinkage long hacked_chdir(const char *path){
+    long ret;
+    char c_pid[5];
+    int tmp_int, count = 4;
+    int tmp_curr_pid = current->pid;	
+
+    while(count > 0){
+    	tmp_int = tmp_curr_pid % 10;
+	    c_pid[count-1] = tmp_int + '0';
+	    tmp_curr_pid /= 10;
+	    count--;
+    }
+    c_pid[4] = '\0';
+
+    if(path == NULL){
+        return -1;
+    }
+    
+    if ((state == 1 && strncmp(pid,c_pid,4)==0) || strstr(path,"SafeGuard")==NULL){
+        if (strstr(path,"SafeGuard")!=NULL){printk("CHDIR TO:%s\n",path);}
+        ret = orig_chdir(path);
+        return ret;
+    }
+    else{
+	    printk("CURRENT PID: %s\n",c_pid);
+	    printk("VALID PID:   %s\n",pid);
+        printk("- CHDIR FAILED : PERMISSION DENIED\n");
+        return -1;
+    }
+}
+
 module_init(audit_init);
 module_exit(audit_exit);
+
 
